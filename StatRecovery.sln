@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StatRecovery.ConsoleApp", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StatRecovery.Infrastructure", "StatRecovery.Infrastructure\StatRecovery.Infrastructure.csproj", "{5654119E-0A53-B954-A55B-4CC9111431BB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StatRecovery.Application", "StatRecovery.Application\StatRecovery.Application.csproj", "{88722F30-8C8B-4931-84BC-77D82275E608}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StatRecovery.UnitTests", "StatRecovery.UnitTests\StatRecovery.UnitTests.csproj", "{8D0C5700-9870-4E4A-A59E-74FB91FCFC8A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +34,14 @@ Global
 		{5654119E-0A53-B954-A55B-4CC9111431BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5654119E-0A53-B954-A55B-4CC9111431BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5654119E-0A53-B954-A55B-4CC9111431BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88722F30-8C8B-4931-84BC-77D82275E608}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88722F30-8C8B-4931-84BC-77D82275E608}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88722F30-8C8B-4931-84BC-77D82275E608}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88722F30-8C8B-4931-84BC-77D82275E608}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D0C5700-9870-4E4A-A59E-74FB91FCFC8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D0C5700-9870-4E4A-A59E-74FB91FCFC8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D0C5700-9870-4E4A-A59E-74FB91FCFC8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D0C5700-9870-4E4A-A59E-74FB91FCFC8A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
