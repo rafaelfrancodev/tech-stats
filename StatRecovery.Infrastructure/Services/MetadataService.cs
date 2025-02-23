@@ -4,28 +4,20 @@ using StatRecovery.Infrastructure.Interfaces;
 
 namespace StatRecovery.Infrastructure.Services
 {
-    public class MetadataService : IMetadataService
+    public class MetadataService(IS3StorageService s3StorageService) : IMetadataService
     {
-        private readonly IS3StorageService _s3StorageService;
-        private readonly string _metadataFileName = "processing_metadata.json";
-
-        public MetadataService(IS3StorageService s3StorageService)
-        {
-            _s3StorageService = s3StorageService;
-        }
+        private const string _metadataFileName = "processing_metadata.json";
 
         public async Task<ProcessingMetadata> LoadMetadataAsync()
         {
             try
             {
-                using (var metadataStream = await _s3StorageService.DownloadMetadataAsync(_metadataFileName))
-                {
-                    if (metadataStream == null)
-                        return new ProcessingMetadata();
+                await using var metadataStream = await s3StorageService.DownloadMetadataAsync(_metadataFileName);
+                if (metadataStream == null)
+                    return new ProcessingMetadata();
 
-                    var metadata = await JsonSerializer.DeserializeAsync<ProcessingMetadata>(metadataStream);
-                    return metadata ?? new ProcessingMetadata();
-                }
+                var metadata = await JsonSerializer.DeserializeAsync<ProcessingMetadata>(metadataStream);
+                return metadata ?? new ProcessingMetadata();
             }
             catch (Exception ex)
             {
@@ -38,13 +30,11 @@ namespace StatRecovery.Infrastructure.Services
         {
             try
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    await JsonSerializer.SerializeAsync(memoryStream, metadata, new JsonSerializerOptions { WriteIndented = true });
-                    memoryStream.Position = 0;
+                using var memoryStream = new MemoryStream();
+                await JsonSerializer.SerializeAsync(memoryStream, metadata, new JsonSerializerOptions { WriteIndented = true });
+                memoryStream.Position = 0;
 
-                    await _s3StorageService.UploadMetadataAsync(memoryStream, _metadataFileName);
-                }
+                await s3StorageService.UploadMetadataAsync(memoryStream, _metadataFileName);
             }
             catch (Exception ex)
             {
@@ -57,10 +47,7 @@ namespace StatRecovery.Infrastructure.Services
             var processedZip = metadata.ProcessedFiles
                 .FirstOrDefault(z => z.ZipFileName == zipFileName);
 
-            if (processedZip == null)
-                return false;
-
-            return processedZip.ExtractedPdfs.Any(pdf => pdf.PdfFileName == pdfFileName && pdf.UploadSuccess);
+            return processedZip != null && processedZip.ExtractedPdfs.Any(pdf => pdf.PdfFileName == pdfFileName && pdf.UploadSuccess);
         }
 
         public bool IsZipFullyProcessed(string zipFileName, ProcessingMetadata metadata)

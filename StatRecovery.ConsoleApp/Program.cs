@@ -48,63 +48,61 @@ class Program
                     continue;
                 }
 
-                using (var zipStream = await s3StorageService.GetZipFileStreamAsync(zipFile))
+                await using var zipStream = await s3StorageService.GetZipFileStreamAsync(zipFile);
+                Log.Information("Extracting files from ZIP: {ZipFile}", zipFile);
+
+                var extractedPdfs = zipService.ExtractZipFile(zipStream);
+
+                var processedZipFile = metadata.ProcessedFiles
+                    .FirstOrDefault(z => z.ZipFileName == zipFile) ?? new ProcessedZipFile
                 {
-                    Log.Information("Extracting files from ZIP: {ZipFile}", zipFile);
+                    ZipFileName = zipFile,
+                    ProcessedDate = DateTime.UtcNow,
+                    ExtractedPdfs = []
+                };
 
-                    var extractedPdfs = zipService.ExtractZipFile(zipStream);
-
-                    var processedZipFile = metadata.ProcessedFiles
-                        .FirstOrDefault(z => z.ZipFileName == zipFile) ?? new ProcessedZipFile
-                        {
-                            ZipFileName = zipFile,
-                            ProcessedDate = DateTime.UtcNow,
-                            ExtractedPdfs = new List<ExtractedPdfFile>()
-                        };
-
-                    foreach (var pdf in extractedPdfs)
+                foreach (var pdf in extractedPdfs)
+                {
+                    if (metadataService.IsPdfProcessed(zipFile, pdf.PdfFileName, metadata))
                     {
-                        if (metadataService.IsPdfProcessed(zipFile, pdf.PdfFileName, metadata))
-                        {
-                            Log.Information("The PDF {PdfFileName} has already been processed. Skipping...", pdf.PdfFileName);
-                            continue;
-                        }
-
-                        try
-                        {
-                            await s3StorageService.UploadPdfAsync(pdf.FileContent, pdf.PoNumber, pdf.PdfFileName);
-                            pdf.UploadSuccess = true;
-                            pdf.FileSize = pdf.FileContent.Length;
-                            Log.Information("Successful upload: {PdfFileName} to PO {PoNumber}", pdf.PdfFileName, pdf.PoNumber);
-                        }
-                        catch (Exception ex)
-                        {
-                            pdf.UploadSuccess = false;
-                            Log.Error(ex, "Error uploading file {PdfFileName}", pdf.PdfFileName);
-                        }
-
-                        processedZipFile.ExtractedPdfs.Add(pdf);
+                        Log.Information("The PDF {PdfFileName} has already been processed. Skipping...", pdf.PdfFileName);
+                        continue;
                     }
 
-                    processedZipFile.IsFullyProcessed = processedZipFile.ExtractedPdfs.All(p => p.UploadSuccess);
-
-                    if (!metadata.ProcessedFiles.Any(z => z.ZipFileName == zipFile))
+                    try
                     {
-                        metadata.ProcessedFiles.Add(processedZipFile);
+                        await s3StorageService.UploadPdfAsync(pdf.FileContent, pdf.PoNumber, pdf.PdfFileName);
+                        pdf.UploadSuccess = true;
+                        pdf.FileSize = pdf.FileContent.Length;
+                        Log.Information("Successful upload: {PdfFileName} to PO {PoNumber}", pdf.PdfFileName, pdf.PoNumber);
+                    }
+                    catch (Exception ex)
+                    {
+                        pdf.UploadSuccess = false;
+                        Log.Error(ex, "Error uploading file {PdfFileName}", pdf.PdfFileName);
                     }
 
-                    await metadataService.SaveMetadataAsync(metadata);
-                    Log.Information("{ZipFile} file processing complete!", zipFile);
+                    processedZipFile.ExtractedPdfs.Add(pdf);
                 }
+
+                processedZipFile.IsFullyProcessed = processedZipFile.ExtractedPdfs.All(p => p.UploadSuccess);
+
+                if (metadata.ProcessedFiles.All(z => z.ZipFileName != zipFile))
+                {
+                    metadata.ProcessedFiles.Add(processedZipFile);
+                }
+
+                await metadataService.SaveMetadataAsync(metadata);
+                Log.Information("{ZipFile} file processing complete!", zipFile);
             }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An unexpected error ocurred.");
+            Log.Error(ex, "An unexpected error occurred.");
         }
         finally
         {
-            Log.CloseAndFlush();
+            await Log.CloseAndFlushAsync();
         }
     }
 }
